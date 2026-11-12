@@ -1,0 +1,23 @@
+{
+  "zoteroVersion": "10.0.8",
+  "platform": "Linux x86_64 headless",
+  "scope": "isolated profile and empty data directory",
+  "addon": {
+    "id": "zotfields@loy.local",
+    "version": "1.0.1",
+    "active": true,
+    "appDisabled": false,
+    "userDisabled": false,
+    "targetApplications": [
+      {
+        "id": "zotero@zotero.org",
+        "minVersion": "7.0.10",
+        "maxVersion": "10.0.*"
+      }
+    ]
+  },
+  "limitations": [
+    "Windows UI not tested",
+    "End-to-end item editing not tested"
+  ]
+}
