@@ -11,7 +11,7 @@ for key in ['id','update_url','strict_min_version','strict_max_version']:
 version=manifest['version']
 out=p/'dist'/f'ZotFields_v{version}.xpi'
 out.parent.mkdir(exist_ok=True)
-runtime=['manifest.json','bootstrap.js','core.js','plugin.js','manager.js','manager.xhtml']
+runtime=['manifest.json','bootstrap.js','core.js','plugin.js','manager.js','manager.xhtml','editor.js','editor.xhtml','csv.js','export.js','export-ui.js','export.xhtml']
 files=[p/name for name in runtime]
 for directory in ['icons','locale']:
     files.extend(f for f in (p/directory).rglob('*') if f.is_file())

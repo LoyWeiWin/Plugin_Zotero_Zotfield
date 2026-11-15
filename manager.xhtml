@@ -1,2 +1,47 @@
 <?xml version="1.0"?>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>ZotFields — Manage custom fields</title><script src="chrome://zotfields/content/manager.js" defer="defer"></script><style>body{font:14px system-ui;padding:20px;background:Canvas;color:CanvasText}button,select,input{font:inherit;margin:4px;padding:6px}fieldset{margin:12px 0}label{display:block}textarea{width:96%;height:100px}#message{white-space:pre-wrap}</style></head><body><h1>ZotFields</h1><p>Edit field labels and options here. Re-select your item after changing definitions.</p><div id="fields"></div><button id="add">Add field…</button><h2>Transfer field definitions</h2><p>Definitions are local to this Zotero profile. Item values sync through Extra. Copy this JSON to transfer definitions to another computer. Import replaces definitions; existing item values are retained.</p><textarea id="json" aria-label="Field definitions JSON"></textarea><button id="export">Export definitions</button><button id="import">Import definitions</button><p id="message" role="status"></p></body></html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>ZotFields — Manage custom fields</title>
+    <script src="chrome://zotfields/content/manager.js"></script>
+    <style>
+      body { font: 14px system-ui; padding: 20px; background: Canvas; color: CanvasText; }
+      button, select, input { font: inherit; margin: 4px; padding: 6px; }
+      fieldset { margin: 12px 0; }
+      label { display: block; }
+      textarea { width: 96%; height: 100px; }
+      #field-label { width: 90%; }
+      #message { white-space: pre-wrap; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <h1>ZotFields</h1>
+    <p>Edit field labels and options here. Use Research metadata in the item's right-hand pane to enter values for that item, or Tools → ZotFields: Edit selected item's metadata…</p>
+    <p id="message" role="status" aria-live="polite">Loading custom fields…</p>
+    <div id="fields"></div>
+    <button id="add" type="button">Add field…</button>
+    <form id="new-field-form" hidden="hidden">
+      <fieldset>
+        <legend>New custom field</legend>
+        <label for="field-label">Field name</label>
+        <input id="field-label" type="text" autocomplete="off" />
+        <label for="field-type">Field type</label>
+        <select id="field-type">
+          <option value="text">Text</option>
+          <option value="boolean">Checkbox (yes/no)</option>
+          <option value="choice">Single choice</option>
+          <option value="multi" selected="selected">Multiple choice</option>
+        </select>
+        <p>For choice fields, add options after saving the field.</p>
+        <button id="save-field" type="submit">Save field</button>
+        <button id="cancel-field" type="button">Cancel</button>
+      </fieldset>
+    </form>
+    <h2>Transfer field definitions</h2>
+    <p>To export item values together with Zotero's bibliographic data, use Tools → ZotFields: Export CSV with research metadata…</p>
+    <p>Definitions are local to this Zotero profile. Item values sync through Extra. Copy this JSON to transfer definitions to another computer. Import replaces definitions; existing item values are retained.</p>
+    <textarea id="json" aria-label="Field definitions JSON"></textarea>
+    <button id="export" type="button">Export definitions</button>
+    <button id="import" type="button">Import definitions</button>
+  </body>
+</html>

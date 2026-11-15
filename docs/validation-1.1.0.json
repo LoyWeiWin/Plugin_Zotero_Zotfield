@@ -1,0 +1,20 @@
+{
+  "pluginVersion": "1.1.0",
+  "zoteroVersion": "10.0.8",
+  "platform": "Linux x86_64 headless",
+  "nativeCSVColumns": 87,
+  "nativeUIChecks": {
+    "export": 35,
+    "itemPane": 31,
+    "manager": 18
+  },
+  "unitChecks": {
+    "csv": 13,
+    "core": 15,
+    "package": 2
+  },
+  "nativeFilePickerInitialization": "passed",
+  "nativeFilePickerUserInteraction": "not tested; selected path and cancellation result substituted in automated checks",
+  "windowsVisualTesting": "not performed",
+  "xpiSHA256": "259a54bc4efa1b4607253ffca35b112ff246fadd75b2dcd858ccce8a145b5cd1"
+}

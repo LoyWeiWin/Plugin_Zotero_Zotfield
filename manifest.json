@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "ZotFields",
-  "version": "1.0.1",
-  "description": "Editable research metadata: reading status, foundational papers, methods and custom fields.",
+  "version": "1.1.0",
+  "description": "Editable research metadata and CSV export alongside Zotero's built-in bibliographic fields.",
   "author": "Wei Win Loy",
   "applications": {
     "zotero": {

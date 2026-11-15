@@ -4,8 +4,10 @@ function install() {}
 function uninstall() {}
 async function startup(data) {
   await Zotero.initializationPromise;
-  pluginScope = { Zotero, Services, Cc, Ci };
+  pluginScope = { Zotero, Services, Cc, Ci, ChromeUtils };
   Services.scriptloader.loadSubScript(data.rootURI + "core.js", pluginScope);
+  Services.scriptloader.loadSubScript(data.rootURI + "csv.js", pluginScope);
+  Services.scriptloader.loadSubScript(data.rootURI + "export.js", pluginScope);
   Services.scriptloader.loadSubScript(data.rootURI + "plugin.js", pluginScope);
   ZotFields = pluginScope.ZotFields;
   await ZotFields.start(data.rootURI);

@@ -11,7 +11,7 @@ This archive contains the repository files, not an existing hosted GitHub reposi
 1. Create a repository named ZotFields in your chosen account. Choose its visibility.
 2. Upload the extracted contents, including the assets, icons, locale, docs and dist folders.
 3. Select a distribution license when ready. The current license-status notice does not grant an open-source license.
-4. After live validation, create a `v1.0.1` release and attach `dist/ZotFields_v1.0.1.xpi`.
+4. After live validation, create a `v1.1.0` release and attach `dist/ZotFields_v1.1.0.xpi`.
 
 ## Command line
 
@@ -20,7 +20,7 @@ After authenticating the GitHub CLI, run from the extracted repository folder:
 ```sh
 git init -b main
 git add .
-git commit -m "Add ZotFields 1.0.1 with branded icons"
+git commit -m "Add combined Zotero and research metadata CSV export in 1.1.0"
 gh repo create ZotFields --private --source=. --remote=origin --push
 ```
 

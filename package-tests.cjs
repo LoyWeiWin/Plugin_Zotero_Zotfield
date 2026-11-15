@@ -1,7 +1,7 @@
 const A=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
 const m=JSON.parse(fs.readFileSync(path.join(__dirname,'manifest.json'))),app=m.applications.zotero;
 for(const k of ['id','update_url','strict_min_version','strict_max_version'])A.equal(typeof app[k],'string');
-A.equal(m.version,'1.0.1');A.equal(app.strict_max_version,'10.0.*');A.equal(new URL(app.update_url).protocol,'https:');
+A.equal(m.version,'1.1.0');A.equal(app.strict_max_version,'10.0.*');A.equal(new URL(app.update_url).protocol,'https:');
 for(const icon of Object.values(m.icons))A(fs.existsSync(path.join(__dirname,icon)));
 console.log('PASS required installation metadata and icon files');
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'zf-preflight-'));

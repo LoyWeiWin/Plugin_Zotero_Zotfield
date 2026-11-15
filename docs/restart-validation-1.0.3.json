@@ -1,0 +1,12 @@
+{
+  "version": "10.0.8",
+  "checks": [
+    "Item A retains its metadata after an application restart",
+    "Item B retains its independent metadata after an application restart",
+    "Custom field definitions survive an application restart",
+    "The item panel and custom fields remain intact after restart and translation",
+    "The saved reading status is displayed after restart",
+    "The saved custom text is displayed after restart"
+  ],
+  "passed": true
+}

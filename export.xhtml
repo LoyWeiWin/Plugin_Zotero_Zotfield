@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>ZotFields — Export CSV</title>
+    <script src="chrome://zotfields/content/export-ui.js"></script>
+    <style>
+      body { font: 14px system-ui; padding: 20px; background: Canvas; color: CanvasText; }
+      h1 { font-size: 22px; }
+      select, button, input { font: inherit; }
+      select { width: 100%; padding: 6px; margin: 6px 0 14px; }
+      label { display: block; margin: 10px 0; }
+      button { padding: 6px 12px; margin: 12px 8px 0 0; }
+      #status { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 2em; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <h1>Export Zotero data and research metadata</h1>
+    <p>One reference per row, with Zotero's standard CSV columns and a column for every custom research field.</p>
+    <form id="export-form">
+      <label for="scope">References to export</label>
+      <select id="scope">
+        <option id="scope-selected" value="selected">Selected references</option>
+        <option id="scope-collection" value="collection">Current collection</option>
+        <option id="scope-library" value="library">Current library</option>
+      </select>
+      <label id="recursive-label"><input id="recursive" type="checkbox" checked="checked" /> Include subcollections</label>
+      <label><input id="include-notes" type="checkbox" /> Include child notes</label>
+      <p id="field-summary"></p>
+      <button id="save-csv" type="submit">Export CSV…</button>
+      <button id="close-export" type="button">Close</button>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+  </body>
+</html>

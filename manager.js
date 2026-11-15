@@ -1,21 +1,180 @@
 "use strict";
-const {plugin:P,core:C}=window.arguments[0].wrappedJSObject;
-const $=id=>document.getElementById(id);
-function node(tag,text){const e=document.createElement(tag);if(text)e.textContent=text;return e;}
-function button(parent,label,fn){const b=node("button",label);b.onclick=()=>Promise.resolve().then(fn).catch(e=>{$("message").textContent=e.message;});parent.append(b);}
-async function update(schema){await P.setSchema(schema);render();$("message").textContent="Saved. Re-select the item to refresh its panel.";}
-function render(){const root=$("fields");root.replaceChildren();for(const f of P.schema()){
- const box=node("fieldset");box.append(node("legend",f.label+" ("+f.type+")"));
- button(box,"Rename field…",async()=>{const label=P.ask(window,"Field label",f.label);if(!label)return;const s=P.schema();s.find(x=>x.id===f.id).label=label;await update(s);});
- const label=node("label"),check=node("input");check.type="checkbox";check.checked=!!f.column;check.onchange=async()=>{try{const s=P.schema();s.find(x=>x.id===f.id).column=check.checked;await update(s);}catch(e){$("message").textContent=e.message;}};label.append(check,document.createTextNode(" Available as a library column"));box.append(label);
- if(f.options){const select=node("select");select.setAttribute("aria-label",f.label+" options");for(const o of f.options){const option=node("option",o.label);option.value=o.id;select.append(option);}box.append(select);
- button(box,"Add option…",async()=>{const name=P.ask(window,"New option","");if(!name)return;const s=P.schema(),field=s.find(x=>x.id===f.id);if(field.options.some(o=>o.label.toLowerCase()===name.toLowerCase()))throw Error("Option already exists");field.options.push({id:P.uid(),label:name});await update(s);});
- button(box,"Rename option…",async()=>{const old=f.options.find(o=>o.id===select.value);if(!old)return;const name=P.ask(window,"New option label",old.label);if(!name)return;if(f.options.some(o=>o.id!==old.id&&o.label.toLowerCase()===name.toLowerCase()))throw Error("Use Merge to combine duplicate options");const s=P.schema();s.find(x=>x.id===f.id).options.find(o=>o.id===old.id).label=name;await update(s);});
- button(box,"Merge / reassign option…",async()=>{const old=f.options.find(o=>o.id===select.value);if(!old)return;const name=P.ask(window,"Enter the existing destination option label. The selected option will be reassigned on display and on future saves.","");if(!name)return;const target=f.options.find(o=>o.label.toLowerCase()===name.toLowerCase());if(!target||target.id===old.id)throw Error("Choose a different existing option");const s=P.schema(),field=s.find(x=>x.id===f.id);field.aliases={...field.aliases,[old.id]:target.id};field.options=field.options.filter(o=>o.id!==old.id);await update(s);});
- }
- root.append(box);
-}}
-$("add").onclick=async()=>{try{const label=P.ask(window,"New field label","");if(!label)return;const type=P.ask(window,"Type: text, boolean, choice, or multi","multi");if(!type)return;const s=P.schema();if(s.some(f=>f.label.toLowerCase()===label.toLowerCase()))throw Error("Field label already exists");s.push({id:P.uid(),label,type,column:false,...(["choice","multi"].includes(type)?{options:[]}: {})});await update(s);}catch(e){$("message").textContent=e.message;}};
-$("export").onclick=()=>{$("json").value=JSON.stringify(P.schema(),null,2);};
-$("import").onclick=async()=>{try{const schema=C.validate(JSON.parse($("json").value));if(!window.confirm("Replace field definitions? Export the current definitions first if you need to restore them."))return;await update(schema);}catch(e){$("message").textContent=e.message;}};
-render();
+
+(() => {
+  const HTML_NS = "http://www.w3.org/1999/xhtml";
+  const $ = id => document.getElementById(id);
+  let P, C;
+  let initialized = false;
+
+  function message(text) { $("message").textContent = text; }
+  function fail(error) {
+    message("ZotFields: " + (error.message || String(error)));
+    console.error("ZotFields field manager", error);
+  }
+  function node(tag, text) {
+    // In XML, createElement() creates unnamespaced, inactive controls.
+    const element = document.createElementNS(HTML_NS, tag);
+    if (text !== undefined) element.textContent = text;
+    return element;
+  }
+  function button(parent, label, handler) {
+    const element = node("button", label);
+    element.type = "button";
+    element.addEventListener("click", () => Promise.resolve().then(handler).catch(fail));
+    parent.append(element);
+  }
+  async function update(schema) {
+    await P.setSchema(schema);
+    render();
+    message("Saved. Open item panels have been updated.");
+  }
+  function render() {
+    const root = $("fields");
+    root.replaceChildren();
+    for (const field of P.schema()) {
+      const box = node("fieldset");
+      box.append(node("legend", field.label + " (" + field.type + ")"));
+      button(box, "Rename field…", async () => {
+        const label = P.ask(window, "Field label", field.label);
+        if (!label) return;
+        const schema = P.schema();
+        schema.find(value => value.id === field.id).label = label;
+        await update(schema);
+      });
+      const label = node("label");
+      const check = node("input");
+      check.type = "checkbox";
+      check.checked = !!field.column;
+      check.addEventListener("change", async () => {
+        try {
+          const schema = P.schema();
+          schema.find(value => value.id === field.id).column = check.checked;
+          await update(schema);
+        } catch (error) { fail(error); }
+      });
+      label.append(check, document.createTextNode(" Available as a library column"));
+      box.append(label);
+      if (field.options) {
+        const select = node("select");
+        select.setAttribute("aria-label", field.label + " options");
+        for (const option of field.options) {
+          const element = node("option", option.label);
+          element.value = option.id;
+          select.append(element);
+        }
+        box.append(select);
+        button(box, "Add option…", async () => {
+          const name = P.ask(window, "New option", "");
+          if (!name) return;
+          const schema = P.schema();
+          const current = schema.find(value => value.id === field.id);
+          if (current.options.some(option => option.label.toLowerCase() === name.toLowerCase())) {
+            throw Error("Option already exists");
+          }
+          current.options.push({ id: P.uid(), label: name });
+          await update(schema);
+        });
+        button(box, "Rename option…", async () => {
+          const old = field.options.find(option => option.id === select.value);
+          if (!old) return;
+          const name = P.ask(window, "New option label", old.label);
+          if (!name) return;
+          if (field.options.some(option => option.id !== old.id && option.label.toLowerCase() === name.toLowerCase())) {
+            throw Error("Use Merge to combine duplicate options");
+          }
+          const schema = P.schema();
+          schema.find(value => value.id === field.id).options.find(option => option.id === old.id).label = name;
+          await update(schema);
+        });
+        button(box, "Merge / reassign option…", async () => {
+          const old = field.options.find(option => option.id === select.value);
+          if (!old) return;
+          const name = P.ask(window, "Enter the existing destination option label. The selected option will be reassigned on display and on future saves.", "");
+          if (!name) return;
+          const target = field.options.find(option => option.label.toLowerCase() === name.toLowerCase());
+          if (!target || target.id === old.id) throw Error("Choose a different existing option");
+          const schema = P.schema();
+          const current = schema.find(value => value.id === field.id);
+          current.aliases = { ...current.aliases, [old.id]: target.id };
+          current.options = current.options.filter(option => option.id !== old.id);
+          await update(schema);
+        });
+      }
+      root.append(box);
+    }
+  }
+  function showAddForm() {
+    $("new-field-form").hidden = false;
+    message("");
+    $("field-label").focus();
+    $("field-label").scrollIntoView({ block: "nearest" });
+  }
+  function hideAddForm() {
+    $("new-field-form").hidden = true;
+    $("new-field-form").reset();
+    $("add").focus();
+  }
+  async function addField(event) {
+    event.preventDefault();
+    const saveButton = $("save-field");
+    if (saveButton.disabled) return;
+    try {
+      const label = $("field-label").value.trim();
+      const type = $("field-type").value;
+      if (!label) {
+        $("field-label").focus();
+        throw Error("Enter a field name.");
+      }
+      const schema = P.schema();
+      if (schema.some(field => field.label.toLowerCase() === label.toLowerCase())) {
+        throw Error("Field label already exists.");
+      }
+      schema.push({
+        id: P.uid(), label, type, column: false,
+        ...(["choice", "multi"].includes(type) ? { options: [] } : {})
+      });
+      saveButton.disabled = true;
+      await update(schema);
+      hideAddForm();
+    } catch (error) { fail(error); }
+    finally { saveButton.disabled = false; }
+  }
+  function initialize() {
+    if (initialized) return;
+    initialized = true;
+    try {
+      const argument = window.arguments?.[0];
+      const api = argument?.wrappedJSObject || argument;
+      if (!api?.plugin || !api?.core) throw Error("The field manager could not connect to ZotFields. Close this window and open it again from Tools.");
+      P = api.plugin;
+      C = api.core;
+      P.managers.add(window);
+      window.addEventListener("unload", () => P.managers.delete(window), { once: true });
+      $("add").addEventListener("click", showAddForm);
+      $("cancel-field").addEventListener("click", hideAddForm);
+      $("new-field-form").addEventListener("submit", addField);
+      $("export").addEventListener("click", () => {
+        try {
+          $("json").value = JSON.stringify(P.schema(), null, 2);
+          message("Field definitions are ready to copy.");
+        } catch (error) { fail(error); }
+      });
+      $("import").addEventListener("click", async () => {
+        try {
+          const schema = C.validate(JSON.parse($("json").value));
+          if (!window.confirm("Replace field definitions? Export the current definitions first if you need to restore them.")) return;
+          await update(schema);
+        } catch (error) { fail(error); }
+      });
+      render();
+      message("");
+    } catch (error) { fail(error); }
+  }
+
+  // Gecko chrome XHTML may execute scripts immediately despite defer.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
+  }
+})();

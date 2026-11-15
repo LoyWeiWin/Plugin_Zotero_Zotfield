@@ -1,24 +1,41 @@
 var ZotFields = {
-  id:"zotfields@loy.local", pref:"extensions.zotfields.schema", columns:[], windows:new Set(), queue:Promise.resolve(),
+  id:"zotfields@loy.local", pref:"extensions.zotfields.schema", columns:[], columnSchema:null, windows:new Set(), panels:new Map(), editors:new Set(), managers:new Set(), exportWindows:new Set(), exportPopupListeners:new Map(), queue:Promise.resolve(),
   schema() {const raw=Zotero.Prefs.get(this.pref,true);return raw?ZFCore.validate(JSON.parse(raw)):ZFCore.defaults();},
   async start(root) {
     this.root=root;
     this.chrome=Cc["@mozilla.org/addons/addon-manager-startup;1"].getService(Ci.amIAddonManagerStartup)
       .registerChrome(Services.io.newURI(root+"manifest.json"),[["content","zotfields","./"]]);
+    for(const win of Zotero.getMainWindows()) this.addWindow(win);
     this.section=Zotero.ItemPaneManager.registerSection({paneID:"zotfields-research",pluginID:this.id,
-      header:{l10nID:"zotfields-title",icon:root+"icons/icon-16.png"},sidenav:{l10nID:"zotfields-title",icon:root+"icons/icon-20.png"},
-      onInit:({doc})=>doc.defaultView.MozXULElement.insertFTLIfNeeded("zotfields.ftl"),
+      header:{l10nID:"zotfields-section",l10nArgs:"{}",icon:root+"icons/icon-16.png"},sidenav:{l10nID:"zotfields-sidenav",icon:root+"icons/icon-20.png"},
+      onInit:({doc,body,refresh})=>{doc.defaultView.MozXULElement.insertFTLIfNeeded("zotfields.ftl");this.panels.set(body,refresh);},
+      onDestroy:({body})=>this.panels.delete(body),
+      onItemChange:({item,setEnabled})=>setEnabled(!!item?.isRegularItem()),
       onRender:ctx=>this.render(ctx)});
     await this.refreshColumns();
-    for(const win of Zotero.getMainWindows()) this.addWindow(win);
   },
   addWindow(win) {
     if(this.windows.has(win)) return;this.windows.add(win);
     win.MozXULElement.insertFTLIfNeeded("zotfields.ftl");
+    const edit=win.document.createXULElement("menuitem");edit.id="zotfields-edit";edit.setAttribute("label","ZotFields: Edit selected item's metadata…");
+    edit.addEventListener("command",()=>this.editSelected(win));win.document.getElementById("menu_ToolsPopup")?.append(edit);
     const menu=win.document.createXULElement("menuitem"); menu.id="zotfields-manage";menu.setAttribute("label","ZotFields: Manage custom fields…");
     menu.addEventListener("command",()=>this.manage(win));win.document.getElementById("menu_ToolsPopup")?.append(menu);
+    const exportMenu=win.document.createXULElement("menuitem");exportMenu.id="zotfields-export";exportMenu.setAttribute("label","ZotFields: Export CSV with research metadata…");
+    exportMenu.addEventListener("command",()=>this.openExport(win));win.document.getElementById("menu_ToolsPopup")?.append(exportMenu);
+    const popup=win.document.getElementById("zotero-itemmenu");
+    if(popup) {
+      const itemMenu=win.document.createXULElement("menuitem");itemMenu.id="zotfields-export-items";itemMenu.setAttribute("label","Export CSV with research metadata…");
+      itemMenu.addEventListener("command",()=>this.openExport(win));popup.append(itemMenu);
+      const listener=event=>{if(event.target===popup)itemMenu.disabled=!ZFExporter.regularItems(win.ZoteroPane.getSelectedItems()).length;};
+      popup.addEventListener("popupshowing",listener);this.exportPopupListeners.set(win,listener);
+    }
   },
-  removeWindow(win) {win.document.getElementById("zotfields-manage")?.remove();win.document.querySelector('[href="zotfields.ftl"]')?.remove();this.windows.delete(win);},
+  removeWindow(win) {
+    const listener=this.exportPopupListeners.get(win);if(listener)win.document.getElementById("zotero-itemmenu")?.removeEventListener("popupshowing",listener);this.exportPopupListeners.delete(win);
+    for(const id of ["zotfields-edit","zotfields-manage","zotfields-export","zotfields-export-items"])win.document.getElementById(id)?.remove();
+    win.document.querySelector('[href="zotfields.ftl"]')?.remove();this.windows.delete(win);
+  },
   element(doc,tag,text) {const e=doc.createElementNS("http://www.w3.org/1999/xhtml",tag);if(text!==undefined)e.textContent=text;return e;},
   error(win,e) {Zotero.logError(e);Services.prompt.alert(win,"ZotFields",e.message||String(e));},
   enqueue(item,field,value) {
@@ -46,14 +63,41 @@ var ZotFields = {
       body.append(box);
     }
     body.append(status);const manage=this.element(doc,"button","Manage custom fields…");manage.type="button";manage.addEventListener("click",()=>this.manage(win));body.append(manage);
+    const exportButton=this.element(doc,"button","Export this item…");exportButton.type="button";exportButton.addEventListener("click",()=>this.openExport(win,[item]));body.append(exportButton);
   },
   uid(){return "f"+Services.uuid.generateUUID().toString().replace(/[^a-z0-9]/gi,"");},
   ask(win,title,value) {const result={value};return Services.prompt.prompt(win,"ZotFields",title,result,null,{})?result.value.trim():null;},
-  async setSchema(schema) {ZFCore.validate(schema);Zotero.Prefs.set(this.pref,JSON.stringify(schema),true);await this.refreshColumns();},
-  async refreshColumns() {
-    for(const key of this.columns) await Zotero.ItemTreeManager.unregisterColumn(key);this.columns=[];
-    for(const f of this.schema().filter(f=>f.column)) this.columns.push(await Zotero.ItemTreeManager.registerColumn({dataKey:"zf_"+f.id,label:f.label,pluginID:this.id,dataProvider:item=>{try{return ZFCore.display(f,ZFCore.read(item.getField("extra"))[f.id]);}catch(_){return "Invalid ZotFields data";}}}));
+  async setSchema(schema) {
+    ZFCore.validate(schema);Zotero.Prefs.set(this.pref,JSON.stringify(schema),true);await this.refreshColumns();
+    for(const [body,refresh] of this.panels) {if(!body.isConnected){this.panels.delete(body);continue;}await refresh();}
   },
-  manage(win) {win.openDialog("chrome://zotfields/content/manager.xhtml","zotfields-manager","chrome,centerscreen,resizable,width=760,height=650",{wrappedJSObject:{plugin:this,core:ZFCore}});},
-  async stop() {await this.queue;for(const win of [...this.windows])this.removeWindow(win);if(this.section)Zotero.ItemPaneManager.unregisterSection(this.section);for(const key of this.columns)await Zotero.ItemTreeManager.unregisterColumn(key);this.chrome?.destruct();}
+  async refreshColumns() {
+    const fields=this.schema().filter(f=>f.column),signature=JSON.stringify(fields);
+    if(signature===this.columnSchema)return;
+    for(const key of this.columns) await Zotero.ItemTreeManager.unregisterColumn(key);this.columns=[];
+    for(const f of fields) this.columns.push(await Zotero.ItemTreeManager.registerColumn({dataKey:"zf_"+f.id,label:f.label,pluginID:this.id,dataProvider:item=>{try{return ZFCore.display(f,ZFCore.read(item.getField("extra"))[f.id]);}catch(_){return "Invalid ZotFields data";}}}));
+    this.columnSchema=signature;
+  },
+  editSelected(win) {
+    const items=win.ZoteroPane.getSelectedItems();
+    if(items.length!==1||!items[0].isRegularItem()) {Services.prompt.alert(win,"ZotFields","Select one bibliographic item in the library, then open this command again.");return;}
+    const editor=win.openDialog("chrome://zotfields/content/editor.xhtml","","chrome,centerscreen,resizable,width=480,height=680",{wrappedJSObject:{plugin:this,item:items[0],editable:win.ZoteroPane.canEdit()&&!items[0].deleted}});
+    this.editors.add(editor);editor.addEventListener("unload",()=>this.editors.delete(editor),{once:true});return editor;
+  },
+  manage(win) {
+    const manager=win.openDialog("chrome://zotfields/content/manager.xhtml","zotfields-manager","chrome,centerscreen,resizable,width=760,height=650",{wrappedJSObject:{plugin:this,core:ZFCore}});
+    this.managers.add(manager);manager.addEventListener("unload",()=>this.managers.delete(manager),{once:true});return manager;
+  },
+  openExport(win,items) {
+    const source=win.ZoteroPane?win:Zotero.getMainWindow();
+    const context=ZFExporter.context(source);if(items)context.selected=ZFExporter.regularItems(items);
+    const dialog=win.openDialog("chrome://zotfields/content/export.xhtml","","chrome,centerscreen,resizable,width=560,height=480",{wrappedJSObject:{plugin:this,exporter:ZFExporter,context}});
+    this.exportWindows.add(dialog);dialog.addEventListener("unload",()=>this.exportWindows.delete(dialog),{once:true});return dialog;
+  },
+  async stop() {
+    await this.queue;
+    for(const win of [...this.editors,...this.managers,...this.exportWindows])if(!win.closed)win.close();this.editors.clear();this.managers.clear();this.exportWindows.clear();
+    for(const win of [...this.windows])this.removeWindow(win);if(this.section)Zotero.ItemPaneManager.unregisterSection(this.section);this.section=null;this.panels.clear();
+    for(const key of this.columns)await Zotero.ItemTreeManager.unregisterColumn(key);this.columns=[];this.columnSchema=null;this.chrome?.destruct();this.chrome=null;
+  }
 };

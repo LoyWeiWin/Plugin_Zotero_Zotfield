@@ -1,0 +1,10 @@
+{
+  "version": "10.0.8",
+  "checks": [],
+  "sectionID": "zotfields\\@loy\\.local-zotfields-research",
+  "sectionFound": true,
+  "html": "<collapsible-section xmlns=\"http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul\" custom=\"true\" data-pane=\"zotfields\\@loy\\.local-zotfields-research\" extra-buttons=\"\" class=\"\" style=\"--open-height: auto;\" open=\"\" data-l10n-id=\"zotfields-title\" data-l10n-args=\"undefined\">Research metadata</collapsible-section><html:style xmlns:html=\"http://www.w3.org/1999/xhtml\" class=\"custom-style\"></html:style>",
+  "fieldsets": 0,
+  "bodyConnected": false,
+  "itemExtra": "Original metadata: keep this"
+}

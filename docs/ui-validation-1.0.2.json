@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "passed": 18,
+  "checks": [
+    "manager initializes all default fields",
+    "dynamic controls are native HTML controls",
+    "Add field opens the form",
+    "empty field name reports a visible error",
+    "creates text field",
+    "creates boolean field",
+    "creates choice field",
+    "creates multi field",
+    "adding fields preserves existing definitions",
+    "duplicate names are rejected without changing definitions",
+    "Cancel closes the form without saving",
+    "library column checkbox saves",
+    "Rename field button saves",
+    "add, rename and merge option buttons work",
+    "Export definitions copies current schema",
+    "Import definitions saves",
+    "new field values save while preserving unrelated Extra",
+    "definitions persist after closing and reopening manager"
+  ],
+  "version": "10.0.8",
+  "platform": "Linux x86_64 headless",
+  "addonVersion": "1.0.2",
+  "date": "2026-11-13",
+  "regression": "1.0.1 fails manager initialization; 1.0.2 passes all 18 checks.",
+  "limitations": [
+    "Windows UI not tested",
+    "Two-computer synchronization not tested"
+  ]
+}
