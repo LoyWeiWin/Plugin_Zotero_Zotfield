@@ -1,6 +1,6 @@
 # ZotFields
 
-![ZotFields logo](assets/zotfields-logo.png)
+![ZotFields logo](icons/icon-128.png)
 
 **Custom research metadata for your Zotero library.**
 
